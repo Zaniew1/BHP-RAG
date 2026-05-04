@@ -1,69 +1,6 @@
-// src/services/rag.service.ts
-
-// import { processDocument } from "./document.service";
-// import { embedText, embedTexts } from "./embedding.service";
-// import { storeChunk, searchSimilarChunks } from "./vector.service";
-// import { generateAnswer } from "./llm.service";
-// import { PrismaClient } from "@prisma/client";
-
-// const prisma = new PrismaClient();
-
-// export async function ingestDocument(filePath: string) {
-//   const processed = await processDocument(filePath);
-
-//   const document = await prisma.document.create({
-//     data: {
-//       title: processed.title,
-//       sourcePath: filePath,
-//     },
-//   });
-
-//   const embeddings = await embedTexts(
-//     processed.chunks.map((chunk) => chunk.content)
-//   );
-
-//   for (let i = 0; i < processed.chunks.length; i++) {
-//     await storeChunk({
-//       documentId: document.id,
-//       content: processed.chunks[i].content,
-//       chunkIndex: processed.chunks[i].index,
-//       embedding: embeddings[i],
-//     });
-//   }
-
-//   return {
-//     documentId: document.id,
-//     title: document.title,
-//     chunksStored: processed.chunks.length,
-//   };
-// }
-
-// export async function askRag(question: string) {
-//   const queryEmbedding = await embedText(question);
-
-//   const similarChunks = (await searchSimilarChunks(
-//     queryEmbedding,
-//     5
-//   )) as Array<{ content: string }>;
-
-//   const context = similarChunks
-//     .map((chunk) => chunk.content)
-//     .join("\n\n");
-
-//   const answer = await generateAnswer({
-//     question,
-//     context,
-//   });
-
-//   return {
-//     answer,
-//     contextChunks: similarChunks.length,
-//   };
-// }
-
-import { DocumentLoadInterface, Loader, LoaderInterface} from "./loader.service"
-import {EmbeddedChunk, EmbeddingClass, OpenAiEmbed } from "./embedding.service";
-import {VectorDB,PrismaVector, VectorDBInterface, StoreChunkParams} from '../services/vector.service'
+import { DocumentLoadInterface, loader,  LoaderInterface} from "./loader.service"
+import {EmbeddedChunk, embedding,  EmbeddingModelInterface } from "./embedding.service";
+import {VectorDBInterface, StoreChunkParams, vectorDatabase } from '../services/vector.service'
 export interface RagInterface{
     augmentPrompt(prompt: string): Promise<string>
     ingestDocuments(folderPath:string): Promise<void> 
@@ -72,7 +9,7 @@ export interface RagInterface{
 class RAG implements RagInterface{
     private readonly CHUNK_SIZE = 1000; 
     private readonly OVERLAP = 150;  
-    constructor(private embeddModel: any, private vectorDb:VectorDBInterface, private docsLoader:LoaderInterface){}
+    constructor(private embeddModel: EmbeddingModelInterface, private vectorDb:VectorDBInterface, private docsLoader:LoaderInterface){}
     public async  ingestDocuments(folderPath:string): Promise<void> {
         try{
             const documentsText = await this.loadDocuments(folderPath);
@@ -92,11 +29,10 @@ class RAG implements RagInterface{
     private async embeddPrompt(prompt: string): Promise<number[]> {
        return await this.embeddModel.embedText(prompt);
     }
-    private async findPromptSimilarities(embeddedPrompt: number[]): Promise<StoreChunkParams[]> {
-        const results = await this.vectorDb.searchSimilarChunks(embeddedPrompt, 5)
+    private async findPromptSimilarities(embeddedPrompt: number[], numberOfResults = 5): Promise<StoreChunkParams[]> {
+        const results = await this.vectorDb.searchSimilarChunks(embeddedPrompt, numberOfResults);
         return results;
     }
-
     private async loadDocuments(folderPath:string): Promise<DocumentLoadInterface[]> {
         return await this.docsLoader.parseDocuments(folderPath)
     }
@@ -168,12 +104,5 @@ class RAG implements RagInterface{
     }
        
 }
-const prismaVector = new PrismaVector();
-export const vectordb = new VectorDB(prismaVector);
 
-const loader = new Loader();
-
-const openAiEmbedding = new OpenAiEmbed();
-const embedding = new EmbeddingClass(openAiEmbedding)
-
-export const rag = new RAG(embedding, vectordb, loader);
+export const rag = new RAG(embedding, vectorDatabase, loader);

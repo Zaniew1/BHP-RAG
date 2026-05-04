@@ -8,6 +8,7 @@ const adapter = new PrismaPg({ connectionString: DATABASE_URL });
 export const prisma = new PrismaClient({ adapter });
 
 export interface StoreChunkParams {
+    id?: number
     documentId:number
     content: string;
     embedding: number[];
@@ -79,7 +80,6 @@ export class PrismaVector implements VectorDBInterface {
     }
     async getDocuments(): Promise<any>{
         const documents = await prisma.document.findMany()
-        console.log(documents)
        return documents
     }
     async  getDocumentChunks(id:number): Promise<any[]>{
@@ -112,3 +112,6 @@ export class VectorDB{
         return this.dbInstance.getDocumentChunks(id);
     }
 }
+
+const prismaVector = new PrismaVector();
+export const vectorDatabase = new VectorDB(prismaVector);

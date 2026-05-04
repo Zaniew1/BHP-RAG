@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { vectordb } from "../services/rag.service";
+import { vectorDatabase } from "../services/vector.service"; 
 const router = Router();
 
 /**
@@ -14,7 +14,7 @@ router.get("/health", (req, res) => {
  */
 router.delete("/reset", async (req, res) => {
     try {
-        await vectordb.cleanDatabase();
+        await vectorDatabase.cleanDatabase();
         return res.json({ message: "Database cleared" });
     } catch (err: any) {
         return res.status(500).json({
@@ -29,7 +29,7 @@ router.delete("/reset", async (req, res) => {
  */
 router.get("/documents", async (req, res) => {
     try {
-        const docs = await vectordb.getDocuments();
+        const docs = await vectorDatabase.getDocuments();
         return res.status(200).json({ message: "Here are your documents", docs });
     } catch (err: any) {
         return res.status(500).json({
@@ -49,7 +49,7 @@ router.post("/chunks", async (req, res) => {
             return res.status(400).json({ message: "Id of document is required" });
         }
         
-        const chunks = await vectordb.getDocumentChunks(id);
+        const chunks = await vectorDatabase.getDocumentChunks(id);
         return res.status(200).json({ message: "Here are your chunks",chunks });
     } catch (err: any) {
         return res.status(500).json({

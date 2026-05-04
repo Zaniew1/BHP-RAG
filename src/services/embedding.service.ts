@@ -2,7 +2,7 @@
 import {EMBEDDING_MODEL, OPENAI_API_KEY} from '../utils/constants'
 import { OpenAIEmbeddings } from "@langchain/openai";
 
-interface EmbeddingModelInterface{
+export interface EmbeddingModelInterface{
     embedText(text: string): Promise<number[]>
     embedTexts(texts: string[]): Promise<EmbeddedChunk[]>
 }
@@ -47,3 +47,6 @@ export class OpenAiEmbed implements EmbeddingModelInterface{
             }));
         }
 }
+
+const openAiEmbedding = new OpenAiEmbed();
+export const embedding = new EmbeddingClass(openAiEmbedding)

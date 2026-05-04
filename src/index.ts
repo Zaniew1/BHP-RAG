@@ -22,6 +22,10 @@ app.use(
     credentials: true,
   })
 );
+import { rerankingRag } from './strategies/Reranking.strategy';
+rerankingRag.implement("Ustawa O Służbie Medycyny Pracy jest z którego roku?")
+
+
 
 router.use("/documents", documentsRouter);
 router.use("/llm", llmRouter);

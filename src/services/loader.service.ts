@@ -79,3 +79,5 @@ export class Loader implements LoaderInterface{
         }
 
 }
+
+export const loader = new Loader();
