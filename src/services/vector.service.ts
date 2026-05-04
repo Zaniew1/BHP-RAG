@@ -14,6 +14,12 @@ export interface StoreChunkParams {
     embedding: number[];
     chunkIndex: number;
 }
+export interface DatabaseSelectStoreChunkParams {
+    id?: number
+    documentId:number
+    content: string;
+    chunkIndex: number;
+}
 interface StoreDocParams {
     id? : number
     title: string;
@@ -28,7 +34,8 @@ export interface VectorDBInterface{
     searchSimilarChunks(embedding: number[],  limit: number): Promise<StoreChunkParams[]>;
     cleanDatabase(): Promise<void>;
     getDocuments(): Promise<StoreDocParams>;
-    getDocumentChunks(id: number): Promise<StoreChunkParams[]>;
+    getDocumentChunks(id: number): Promise<DatabaseSelectStoreChunkParams[]>;
+    getChunks(id: number[]): Promise<DatabaseSelectStoreChunkParams[]>;
 }
 
 export class PrismaVector implements VectorDBInterface {
@@ -82,8 +89,16 @@ export class PrismaVector implements VectorDBInterface {
         const documents = await prisma.document.findMany()
        return documents
     }
-    async  getDocumentChunks(id:number): Promise<any[]>{
+    async  getDocumentChunks(id:number): Promise<DatabaseSelectStoreChunkParams[]>{
         return prisma.documentChunk.findMany({where: {documentId:id}})
+    }
+    async getChunks(id: number[]): Promise<DatabaseSelectStoreChunkParams[]>{
+        return prisma.documentChunk.findMany(
+            { 
+                where: {
+                    id:  { in: id },
+                }       
+            })
     }
 }
 
@@ -108,8 +123,11 @@ export class VectorDB{
     getDocuments(): Promise<any>{
        return this.dbInstance.getDocuments();
     }
-    getDocumentChunks(id:number): Promise<any[]>{
+    getDocumentChunks(id:number): Promise<DatabaseSelectStoreChunkParams[]>{
         return this.dbInstance.getDocumentChunks(id);
+    }
+    getChunks(id:number[]): Promise<DatabaseSelectStoreChunkParams[]>{
+        return this.dbInstance.getChunks(id);
     }
 }
 

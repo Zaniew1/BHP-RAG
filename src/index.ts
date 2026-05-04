@@ -8,6 +8,9 @@ import documentsRouter from "./routes/documents.routes";
 import { Router } from "express";
 import { NODE_ENV } from "./utils/constants";
 import { startServer } from "./config/server";
+import { multiQueryRag } from "./strategies/MultiQuery.strategy";
+import { rerankingRag } from "./strategies/Reranking.strategy";
+import { naiveRag } from "./strategies/NaiveRag.strategy";
 
 const app = express();
 const router = Router();
@@ -22,10 +25,17 @@ app.use(
     credentials: true,
   })
 );
-import { rerankingRag } from './strategies/Reranking.strategy';
-rerankingRag.implement("Ustawa O Służbie Medycyny Pracy jest z którego roku?")
+// const promptTest = "Na podstawie czego przeprowadza sie badanie profilaktyczne?";
+// (async ()=>{
+//   let response = '';
+// //  response =  await naiveRag.implement(promptTest); // może sie gubić
+// //  response =  await rerankingRag.implement(promptTest); // najdłużej idzie
+// //  response =  await multiQueryRag.implement(promptTest); // póki co najlepszy
 
+//   console.log(response);
 
+// })()
+  
 
 router.use("/documents", documentsRouter);
 router.use("/llm", llmRouter);

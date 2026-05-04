@@ -1,8 +1,14 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { LLM_MODEL, OPENAI_API_KEY } from "../utils/constants";
-import { RagInterface } from "./rag.service";
+import { rag, RagInterface } from "./rag.service";
 
-export class LLM{
+
+export interface LLMModelInterface{
+    generateAnswerWithRag(prompt: string, context: string): Promise<string>
+    generateAnswerWithoutRag(prompt: string): Promise<string>
+}
+
+export class LLM implements LLMModelInterface{
     constructor(private rag: RagInterface){}
     private llm = new ChatOpenAI({
         model: LLM_MODEL,
@@ -11,22 +17,33 @@ export class LLM{
     });
 
 
-public async generateAnswer(prompt:string): Promise<string> {
+    public async generateAnswerWithRag(prompt:string, context: string): Promise<string> {
 
-    const context = await this.rag.augmentPrompt(prompt)
-    const newPrompt = `
-        You are a helpful RAG assistant.
-        Answer the user's question ONLY using the provided context.
-        If the answer is not in context, say you don't know.
+        const newPrompt = `
+            You are a helpful RAG assistant.
+            Answer the user's question ONLY using the provided context.
+            If the answer is not in context, say you don't know.
+            Try to analyze every paragraph in search of an answer
 
-        Context:
-        ${context}
+            Context:
+            ${context}
 
-        Question:
-        ${prompt}
-    `;
-    const response = await this.llm.invoke(newPrompt);
-    return response.content.toString();
+            Question:
+            ${prompt}
+        `;
+        const response = await this.llm.invoke(newPrompt);
+        return response.content.toString();
+    }
+    public async generateAnswerWithoutRag(prompt:string): Promise<string> {
+
+        const newPrompt = `
+            Question:
+            ${prompt}
+        `;
+        const response = await this.llm.invoke(newPrompt);
+        return response.content.toString();
+    }
+
 }
 
-}
+export const llmModel = new LLM(rag);

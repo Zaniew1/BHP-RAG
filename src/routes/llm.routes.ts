@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { LLM } from "../services/llm.service";
 import { rag } from "../services/rag.service";
+import { multiQueryRag } from "../strategies/MultiQuery.strategy";
 const router = Router();
 
 const llm = new LLM(rag);
@@ -15,8 +16,7 @@ router.post("/ask", async (req, res) => {
         if (!question) {
             return res.status(400).json({ message: "Question is required" });
         }
-
-        const answer = await llm.generateAnswer(question);
+        const answer = await multiQueryRag.implement(question);
 
         return res.json({
             question,
