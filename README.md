@@ -64,28 +64,36 @@ npm install
 
 ### 3. Configure environment variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory.
+
+All supported variables:
 
 ```env
-#System
+# System
 NODE_ENV=dev
 PORT=3000
 APP_VERSION=v1.1.1
 APP_ORIGIN=http://localhost
+
 # OpenAI
-EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_API_KEY=sk-...
 LLM_MODEL=gpt-4o-mini
+EMBEDDING_MODEL=text-embedding-3-small
 
-# PostgreSQL
+# PostgreSQL / Docker
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 POSTGRES_DB=bhp_rag
 POSTGRES_PORT=5432
 
-# Prisma
+# Prisma / app database connection
 DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${POSTGRES_PORT}/${POSTGRES_DB}
 ```
+
+Notes:
+- `DATABASE_URL` is required by Prisma and the app runtime.
+- `POSTGRES_*` variables are used by `docker-compose.yaml` to configure the database container.
+- Inside Docker, `DATABASE_URL` is overridden to use host `db` (`postgresql://...@db:5432/...`).
 
 ### 4. Start the database
 
@@ -123,6 +131,21 @@ See [`endpoints.http`](./endpoints.http) for ready-to-use request examples.
 | `POST` | `/system/chunks` | Get chunks for a given document ID |
 | `GET` | `/system/documents` | List all ingested documents |
 | `DELETE` | `/system/reset` | Delete all documents and chunks from the vector database |
+
+---
+
+## RAG strategies
+
+The project includes three query-time retrieval strategies:
+
+- **Naive RAG** (`src/strategies/NaiveRag.strategy.ts`)  
+  Embeds the user query, retrieves top similar chunks, and sends context directly to the LLM.
+- **MultiQuery RAG** (`src/strategies/MultiQuery.strategy.ts`)  
+  Generates multiple paraphrased queries, retrieves chunks for each query, deduplicates results, and answers with broader context.
+- **Reranking RAG** (`src/strategies/Reranking.strategy.ts`)  
+  Retrieves a larger candidate set first, reranks chunks with an LLM reranker, then builds context from top-ranked chunks.
+
+Current default for `POST /llm/ask` is **MultiQuery RAG** (see `src/routes/llm.routes.ts`).
 
 ---
 
