@@ -17,14 +17,19 @@ class RAG implements RagInterface{
             const documentsTextWithEmbeddedChunks = await this.embeddDocuments(documentsTextWithChunks);
             await this.storeInVectorDb(documentsTextWithEmbeddedChunks);
         }catch(e){
-            throw Error('Nie udało się')
+            throw Error('Nie udało się preprocesować dokumentów')
         }
     }
     public async augmentPrompt(prompt: string): Promise<string> {
-        const embeddedPrompt = await this.embeddPrompt(prompt)
-        const similarChunks = await this.findPromptSimilarities(embeddedPrompt)
-        const context = similarChunks.map((chunk) => chunk.content).join("\n\n");
-        return context;
+        try{
+
+            const embeddedPrompt = await this.embeddPrompt(prompt)
+            const similarChunks = await this.findPromptSimilarities(embeddedPrompt)
+            const context = similarChunks.map((chunk) => chunk.content).join("\n\n");
+            return context;
+        }catch(err:any){
+            throw Error ('Nie udało augmentować Prompta')
+        }
     }
     private async embeddPrompt(prompt: string): Promise<number[]> {
        return await this.embeddModel.embedText(prompt);
@@ -34,7 +39,12 @@ class RAG implements RagInterface{
         return results;
     }
     private async loadDocuments(folderPath:string): Promise<DocumentLoadInterface[]> {
-        return await this.docsLoader.parseDocuments(folderPath)
+        try{
+            return await this.docsLoader.parseDocuments(folderPath)
+        }catch(err:any){
+            throw Error ('Nie udało zaladować dokumentów')
+        }
+        
     }
     private chunkDocuments(docs: DocumentLoadInterface[]): DocumentLoadInterface[] {
         return docs.map(doc => {
@@ -65,44 +75,54 @@ class RAG implements RagInterface{
             };
         });
     }
-   private async embeddDocuments(docs: DocumentLoadInterface[]): Promise<DocumentLoadInterface[]> {
-        for (const doc of docs) {
-            if (!doc.chunks) continue;
-            for (const singleChunk of doc.chunks) {
-                singleChunk.vector = await this.embeddModel.embedText(singleChunk.content);
+    private async embeddDocuments(docs: DocumentLoadInterface[]): Promise<DocumentLoadInterface[]> {
+        try{
+            for (const doc of docs) {
+                if (!doc.chunks) continue;
+                for (const singleChunk of doc.chunks) {
+                    singleChunk.vector = await this.embeddModel.embedText(singleChunk.content);
+                }
             }
+            return docs;
+        }catch(err){
+            throw Error("Nie udało się embeddować tesktów")
         }
-        return docs;
     }
     private async storeInVectorDb(documents: DocumentLoadInterface[]): Promise<void> {
-        // zapis wszystkich dokumentów do bazy
-        await Promise.all(
-            documents.map(async (doc) => {
-                // zapis dokumentu głównego
-                const existingDocument = await this.vectorDb.checkDocExistance(doc.title);
-                if(existingDocument) return;
-                const docId = await this.vectorDb.storeDoc({
-                    title: doc.title,
-                    content: doc.content,
-                    sourcePath: doc.source,
-                });
-                // zapis chunków powiązanych z dokumentem
-                if (doc.chunks?.length) {
-                    await Promise.all(
-                        doc.chunks.map(async (singleChunk, index) => {
-                            await this.vectorDb.storeChunk({
-                                documentId: docId,
-                                content: singleChunk.content,
-                                embedding: singleChunk.vector,
-                                chunkIndex: index
-                            });
-                        })
-                    );
-                }
-            })
-        );
+        try{
+
+            // zapis wszystkich dokumentów do bazy
+            await Promise.all(
+                documents.map(async (doc) => {
+                    // zapis dokumentu głównego
+                    const existingDocument = await this.vectorDb.checkDocExistance(doc.title);
+                    if(existingDocument) return;
+                    const docId = await this.vectorDb.storeDoc({
+                        title: doc.title,
+                        content: doc.content,
+                        sourcePath: doc.source,
+                    });
+                    // zapis chunków powiązanych z dokumentem
+                    if (doc.chunks?.length) {
+                        await Promise.all(
+                            doc.chunks.map(async (singleChunk, index) => {
+                                await this.vectorDb.storeChunk({
+                                    documentId: docId,
+                                    content: singleChunk.content,
+                                    embedding: singleChunk.vector,
+                                    chunkIndex: index
+                                });
+                            })
+                        );
+                    }
+                })
+            );
+        }catch(err){
+            throw Error ("NIe udało się zapisać do bazy danych")
+        }
+
+        }
+        
     }
-       
-}
 
 export const rag = new RAG(embedding, vectorDatabase, loader);

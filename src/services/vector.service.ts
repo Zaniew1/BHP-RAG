@@ -28,12 +28,12 @@ interface StoreDocParams {
 }
 
 export interface VectorDBInterface{
-    storeChunk(params: StoreChunkParams): void;
+    storeChunk(params: StoreChunkParams): Promise<number>;
     storeDoc(params: StoreDocParams): Promise<number>;
     checkDocExistance(title: string): Promise<StoreDocParams | null>;
     searchSimilarChunks(embedding: number[],  limit: number): Promise<StoreChunkParams[]>;
     cleanDatabase(): Promise<void>;
-    getDocuments(): Promise<StoreDocParams>;
+    getDocuments(): Promise<StoreDocParams[]>;
     getDocumentChunks(id: number): Promise<DatabaseSelectStoreChunkParams[]>;
     getChunks(id: number[]): Promise<DatabaseSelectStoreChunkParams[]>;
 }
@@ -61,7 +61,6 @@ export class PrismaVector implements VectorDBInterface {
         const result = await prisma.$queryRaw<{ id: number }[]>`
         INSERT INTO "Document" ("title", "content", "sourcePath")
         VALUES (${title}, ${content}, ${sourcePath}) RETURNING id`;
-
         return result[0].id;
     }
 
@@ -79,33 +78,54 @@ export class PrismaVector implements VectorDBInterface {
     `);
     }
     async checkDocExistance(title:string): Promise<StoreDocParams | null>{
-       return await prisma.document.findFirst({ where: { title: title } });
+        try{
+            const existingDoc = await prisma.document.findFirst({ where: { title: title } });
+            return existingDoc;
+        }catch(err:any){
+            throw Error('Nie udało sie checkDocExistance w bazie, problem z bazą danych')
+        }
     }
     async  cleanDatabase(): Promise<void>{
-        await prisma.documentChunk.deleteMany()
-        await prisma.document.deleteMany()
+        try{
+            await prisma.documentChunk.deleteMany()
+            await prisma.document.deleteMany()
+        }catch(err:any){
+            throw Error('Nie udało sie cleanDatabase w bazie, problem z bazą danych')
+        }
     }
-    async getDocuments(): Promise<any>{
-        const documents = await prisma.document.findMany()
-       return documents
+    async getDocuments(): Promise<StoreDocParams[]>{
+        try{
+            const documents = await prisma.document.findMany()
+            return documents
+         }catch(err:any){
+            throw Error('Nie udało sie getDocuments w bazie, problem z bazą danych')
+        }
     }
     async  getDocumentChunks(id:number): Promise<DatabaseSelectStoreChunkParams[]>{
-        return prisma.documentChunk.findMany({where: {documentId:id}})
+        try{
+            return prisma.documentChunk.findMany({where: {documentId:id}})
+        }catch(err:any){
+            throw Error('Nie udało sie getDocumentChunks w bazie, problem z bazą danych')
+        }
     }
     async getChunks(id: number[]): Promise<DatabaseSelectStoreChunkParams[]>{
-        return prisma.documentChunk.findMany(
-            { 
-                where: {
-                    id:  { in: id },
-                }       
-            })
+        try{
+            return prisma.documentChunk.findMany(
+                { 
+                    where: {
+                        id:  { in: id },
+                    }       
+                })
+        }catch(err:any){
+            throw Error('Nie udało sie getChunks w bazie, problem z bazą danych')
+        }
     }
 }
 
 export class VectorDB{
     constructor(private dbInstance : VectorDBInterface){
     }
-    storeChunk(params: StoreChunkParams){
+    storeChunk(params: StoreChunkParams) : Promise<number>{
         return this.dbInstance.storeChunk(params)
     }
     storeDoc(params: StoreDocParams){
@@ -120,7 +140,7 @@ export class VectorDB{
     cleanDatabase(): Promise<void>{
         return this.dbInstance.cleanDatabase()
     }
-    getDocuments(): Promise<any>{
+    getDocuments(): Promise<StoreDocParams[]>{
        return this.dbInstance.getDocuments();
     }
     getDocumentChunks(id:number): Promise<DatabaseSelectStoreChunkParams[]>{

@@ -1,12 +1,11 @@
 # All api requests for RAG system
 
-
 ### use RAG system
 POST http://localhost:3000/llm/ask
 Content-Type: application/json
 
 {
-    "question": "Jakie wykształcenie ma Mateusz Zaniewski?"
+    "question": "Jakie są przepisy ogólne dotyczące organizacji ręcznych prac transportowych ?"
 }
 
 ### ingest documents for RAG system
