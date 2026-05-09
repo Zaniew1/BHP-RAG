@@ -1,5 +1,5 @@
 {
-  "name": "bhp-rag-mcp",
+  "name": "bhp-rag",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Zaniew1/BHP-RAG-MCP.git"
+    "url": "git+https://github.com/Zaniew1/BHP-RAG.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Zaniew1/BHP-RAG-MCP/issues"
+    "url": "https://github.com/Zaniew1/BHP-RAG/issues"
   },
-  "homepage": "https://github.com/Zaniew1/BHP-RAG-MCP#readme",
+  "homepage": "https://github.com/Zaniew1/BHP-RAG#readme",
   "dependencies": {
     "@langchain/openai": "^1.4.5",
     "@modelcontextprotocol/sdk": "^1.29.0",
